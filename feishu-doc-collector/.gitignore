@@ -1,0 +1,6 @@
+config.json
+seen.json
+chats.json
+*.log
+__pycache__/
+*.pyc

@@ -1,0 +1,18 @@
+{
+  "base_token": "<base_token>",
+  "table_id": "<table_id>",
+  "base_url": "https://<tenant>.feishu.cn/base/<base_token>",
+  "chat_id": "<chat_id>",
+  "timezone": "Asia/Shanghai",
+  "default_project": "通用/公司",
+  "projects": [
+    {
+      "name": "Project A",
+      "keywords": ["project a", "project-a"]
+    },
+    {
+      "name": "Project B",
+      "keywords": ["project b", "project-b"]
+    }
+  ]
+}
