@@ -49,6 +49,8 @@ STATE_PATH = os.path.join(HERE, 'seen.json')
 FIN_KW = ['dzfp', '发票', '付款', '银行', '贷款', '税务', '估值', '尽调', '货款', '报销', '资金', '融资', '投资人', '合同', '回款', '预算', '成本', '财务']
 DATA_KW = ['总表', '汇总', '台账', '记录表', '盘点', 'BOM', 'SKU', 'SN划分', '预留量', '负载搜集', 'return_selection', '测算', '经营分析', '控制表', '跟踪表']
 RESUME_KW = ['简历', 'CV', 'cv', '候选人', '应届生', '实习生']
+PAYROLL_TRAVEL_KW = ['工资', '薪资', '薪酬', '薪水', '调薪', '年终奖', '奖金', '社保', '公积金', '个税', '工资条',
+                     '考勤', '请假', '加班', '工时', '出差', '差旅', '行程', '外勤', '拜访', '机票', '酒店', '车票', '住宿']
 RESUME_RE = re.compile(r'【[^】]*(工程师|算法|开发|产品|运营|实习|岗位|招聘)[^】]*】.*\d+\s*年.*\.(pdf|docx?)$', re.I)
 
 
@@ -64,7 +66,9 @@ def excluded(title, chat):
         return True
     if re.search(r'_\d+\.\d{2}\.pdf$', t):
         return True
-    # resumes / candidate CVs
+    # payroll / attendance / business-travel logs and resumes
+    if any(k in t for k in PAYROLL_TRAVEL_KW):
+        return True
     if any(k in t for k in RESUME_KW) or RESUME_RE.search(title or ''):
         return True
     if ('面试' in (chat or '') or '招聘' in (chat or '')) and re.search(r'\.(pdf|docx|doc)$', title or '', re.I):
@@ -211,12 +215,19 @@ def notify(text, dry=False):
     last = None
     for attempt in range(3):
         try:
-            lib.run(['im', '+messages-send', '--chat-id', CHAT_ID, '--as', 'bot', '--markdown', text], timeout=60)
+            lib.run(['im', '+messages-send', '--chat-id', CHAT_ID, '--as', 'bot', '--text', text], timeout=60)
             return
         except Exception as e:
             last = e
             log(f'notification failed (attempt {attempt+1}/3): {e}')
             time.sleep(10 + attempt * 10)
+    # last-resort short notification: never leave the user without a status
+    try:
+        lib.run(['im', '+messages-send', '--chat-id', CHAT_ID, '--as', 'bot', '--text',
+                 f'昨天文档整理完成，数据已写入知识库：{BASE_URL}'], timeout=60)
+        return
+    except Exception as e:
+        log(f'notification fallback failed: {e}')
     log(f'notification failed after retries: {last}')
 
 
@@ -398,7 +409,7 @@ def main():
         lines.append("文档：" + "；".join(titles[:15]) + ("；…" if len(titles) > 15 else ""))
     if errors:
         lines.append(f"有 {len(errors)} 个会话读取失败，已跳过。")
-    lines.append(f"[打开知识库]({BASE_URL})")
+    lines.append(f"知识库：{BASE_URL}")
     msg = "\n".join(lines)
     notify(msg, dry=args.dry_run)
     print(json.dumps({'date': start.strftime('%Y-%m-%d'), 'messages': len(all_msgs), 'unique': len(per_key), 'new': len(new_docs), 'existing': len(existing_infos), 'added': added, 'types': dict(types), 'errors': len(errors)}, ensure_ascii=False))
