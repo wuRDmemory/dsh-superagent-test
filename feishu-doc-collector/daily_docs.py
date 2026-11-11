@@ -236,6 +236,7 @@ def main():
     ap.add_argument('--date', default='', help='YYYY-MM-DD; default yesterday')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--limit-chats', type=int, default=0)
+    ap.add_argument('--groups-only', action='store_true')
     ap.add_argument('--workers', type=int, default=4)
     ap.add_argument('--max-pages', type=int, default=20)
     args = ap.parse_args()
@@ -259,6 +260,8 @@ def main():
     except Exception as e:
         notify(f'早上好，今天的文档自动整理失败：无法读取会话列表（{e}）。请检查飞书授权。')
         raise
+    if args.groups_only:
+        chats = [c for c in chats if c.get('chat_mode') == 'group']
     if args.limit_chats:
         chats = chats[:args.limit_chats]
     log(f'chats={len(chats)}')
