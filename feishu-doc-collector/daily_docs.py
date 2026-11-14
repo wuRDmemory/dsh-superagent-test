@@ -155,8 +155,8 @@ def tags_for(title, doctype):
 def fmt_of(d):
     if d['kind'] == 'file':
         ext = (d.get('ext') or '').lower()
-        return {'.pdf': 'PDF', '.xlsx': 'Excel', '.xls': 'Excel', '.docx': 'Word', '.doc': 'Word', '.pptx': 'PPT', '.ppt': 'PPT', '.csv': 'CSV', '.md': 'Markdown', '.txt': '文本', '.zip': '压缩包'}.get(ext, ext.upper().lstrip('.') or '文件')
-    return {'DOCX': '飞书文档', 'DOC': '飞书文档', 'SHEET': '飞书表格', 'BITABLE': '多维表格', 'SLIDES': '幻灯片', 'MINDNOTE': '思维笔记', 'FILE': '文件', 'WIKI': 'Wiki 页面'}.get(d.get('type'), d.get('type') or '文档')
+        return {'.pdf': 'PDF', '.xlsx': 'Excel', '.xls': 'Excel', '.docx': 'Word', '.doc': 'Word', '.pptx': 'PPT', '.ppt': 'PPT', '.csv': 'CSV', '.md': 'Markdown', '.txt': '文本', '.zip': '压缩包'}.get(ext, '文件')
+    return {'DOCX': '飞书文档', 'DOC': '飞书文档', 'SHEET': '飞书表格', 'BITABLE': '多维表格', 'SLIDES': '幻灯片', 'MINDNOTE': '思维笔记', 'FILE': '文件', 'WIKI': 'Wiki 页面'}.get(d.get('type'), '文件')
 
 
 def key_of(d):
