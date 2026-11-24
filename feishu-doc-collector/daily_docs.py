@@ -5,6 +5,7 @@ Scans all chats for documents shared yesterday (Asia/Shanghai), classifies them
 into the 3-level schema, appends new records to the Base, and notifies the user.
 """
 import argparse, json, os, re, subprocess, sys, time
+from urllib.parse import urlparse
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
@@ -178,8 +179,11 @@ def enrich_titles(docs):
     """Batch-resolve link doc titles via drive metas. Mutates docs."""
     req, mapping = [], {}
     dtmap = {'0':'docx','1':'doc','2':'wiki','3':'sheet','4':'bitable','5':'slides','6':'mindnote','7':'file','8':'folder'}
+    main_host = urlparse(BASE_URL).netloc
     for d in docs:
         if d['kind'] != 'link': continue
+        if main_host and urlparse(d.get('url')).netloc != main_host:
+            continue
         pu = parse_url(d.get('url'))
         if not pu: continue
         kind, token = pu
