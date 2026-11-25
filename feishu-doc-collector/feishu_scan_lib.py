@@ -4,7 +4,7 @@
 Uses the raw IM messages API (no reaction-enrichment scope needed).
 Read-only. Writes JSON/CSV summary to /tmp/feishu-chat-docs.
 """
-import argparse, csv, json, os, re, subprocess, sys, time
+import argparse, csv, json, os, re, signal, subprocess, sys, time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
@@ -35,11 +35,23 @@ def day(ms):
 def run(args, timeout=120, tries=5, quiet=False):
     cmd = [LARK] + args + ["--format", "json"]
     for attempt in range(tries):
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
         try:
-            p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            out, errout = p.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            time.sleep(2 + attempt * 2); continue
-        out = p.stdout
+            try:
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+            except Exception:
+                try: p.kill()
+                except Exception: pass
+            try:
+                out, errout = p.communicate(timeout=5)
+            except Exception:
+                out, errout = '', ''
+            if not quiet:
+                log(f"timeout after {timeout}s: {' '.join(args)[:180]}")
+            time.sleep(2 + attempt * 2)
+            continue
         try:
             obj = json.loads(out)
         except Exception:
@@ -47,13 +59,13 @@ def run(args, timeout=120, tries=5, quiet=False):
             i = out.find("{")
             try: obj = json.loads(out[i:])
             except Exception:
-                low = (p.stdout + p.stderr).lower()
+                low = (out + errout).lower()
                 if 'rate' in low or '429' in low or 'frequency' in low:
                     wait = 15 + attempt * 10
                 else:
                     wait = 5 + attempt * 5
                 if not quiet:
-                    log(f"non-JSON rc={p.returncode} stdout={p.stdout[-300:]} stderr={p.stderr[-300:]} sleep={wait}s")
+                    log(f"non-JSON rc={p.returncode} stdout={out[-300:]} stderr={errout[-300:]} sleep={wait}s")
                 time.sleep(wait); continue
         if obj.get("ok"): return obj.get("data", {})
         err = obj.get("error") or {}
@@ -159,7 +171,7 @@ def fetch_chat(chat, start_s, end_s, max_pages):
                 "sort_type": "ByCreateTimeDesc", "page_size": 50,
             }
             if token: params["page_token"] = token
-            d = run(["api", "GET", "/open-apis/im/v1/messages", "--params", json.dumps(params), "--as", "user"], quiet=True)
+            d = run(["api", "GET", "/open-apis/im/v1/messages", "--params", json.dumps(params), "--as", "user"], quiet=True, timeout=5, tries=1)
             page = d.get("items") or []
             items.extend(page); pages += 1
             if not d.get("has_more"): break
