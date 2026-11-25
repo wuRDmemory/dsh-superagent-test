@@ -53,6 +53,7 @@ RESUME_KW = ['简历', 'CV', 'cv', '候选人', '应届生', '实习生']
 PAYROLL_TRAVEL_KW = ['工资', '薪资', '薪酬', '薪水', '调薪', '年终奖', '奖金', '社保', '公积金', '个税', '工资条',
                      '考勤', '请假', '加班', '工时', '出差', '差旅', '行程', '外勤', '拜访', '机票', '酒店', '车票', '住宿']
 KOL_KW = ['kol', '达人', '网红', '博主', 'influencer']
+HR_KW = ['人才识别', '人才盘点', '人才评估', '人才']
 RESUME_RE = re.compile(r'【[^】]*(工程师|算法|开发|产品|运营|实习|岗位|招聘)[^】]*】.*\d+\s*年.*\.(pdf|docx?)$', re.I)
 
 
@@ -72,6 +73,8 @@ def excluded(title, chat):
     if any(k in t for k in PAYROLL_TRAVEL_KW):
         return True
     if any(k in t.lower() for k in KOL_KW):
+        return True
+    if any(k in t for k in HR_KW):
         return True
     if any(k in t for k in RESUME_KW) or RESUME_RE.search(title or ''):
         return True
